@@ -5,10 +5,11 @@ set -euo pipefail
 # SSDの名前(SSDの名前が違う場合は""の中の名前を変更してください)
 SSD_NAME="PortableSSD"
 
-#バックアップしたいフォルダー名を/と"の間に記述してください
+# バックアップしたいフォルダー名を指定してください（例: Documents や Desktop など）
 SOURCES=(
-    "$HOME/"
-    "$HOME/"
+    "$HOME/Documents/"
+    "$HOME/Desktop/"
+    # 必要に応じて追加してください
 )
 
 MOUNT_POINT="/Volumes/$SSD_NAME"
@@ -41,7 +42,10 @@ for src in "${SOURCES[@]}"; do
         # 各バックアップ元の項目数に応じて、その項目専用の進捗バーを更新する。
         total_items="$(find "$src" -print | wc -l | tr -d ' ')"
         label="$(basename "$src")"
-        rsync -a --progress --out-format='__BACKUP_DONE__%n' "$src" "$TARGET_BASE/" | /usr/bin/perl -e '
+
+        # 修正箇所: exFAT等の外付けSSDでエラーが出ないようオプションを変更
+        # -a の代わりに -rltv を使用し、--no-D で特殊ファイルをスキップ、--modify-window=1 で時刻ズレを許容
+        rsync -rltv --modify-window=1 --no-D --progress --out-format='__BACKUP_DONE__%n' "$src" "$TARGET_BASE/" | /usr/bin/perl -e '
             $| = 1;
             ($total, $label) = splice(@ARGV, 0, 2);
             while (<STDIN>) {
